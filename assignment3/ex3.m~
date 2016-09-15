@@ -1,0 +1,20 @@
+load 'visiblehuman'
+head_mri=double(head_mri);
+head_frozen=double(head_frozen);
+
+% Find center of mass for MRI and CT
+mm=com(head_mri);
+mf=com(head_frozen);
+[Um,Sm]=principal_axis(head_mri,mm);
+[Uf,Sf]=principal_axis(head_frozen);
+
+%
+imagesc(head_frozen);
+hold on;
+plot(mf(1),mf(2),'mx');
+hold on;
+plot([mf(1) 100*Uf(1,1)+mf(1)],[mf(2) 100*Uf(2,1)+mf(2)],'m-');
+hold on;
+plot([mf(1) 100*Uf(1,2)+mf(1)],[mf(2) 100*Uf(2,2)+mf(2)],'m-');
+axis('square')
+
