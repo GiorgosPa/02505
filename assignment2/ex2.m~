@@ -87,9 +87,9 @@ FRE_ct_mri=sum(reshape((yhat-y).^2,1,numel(y)))
 
 %% Transform MR to CT using bilinear interpolation
 
-% Plot CT frozen control points on MRI
+% Plot MRI control points on frozen CT
 figure;
-imagesc(head_mri);
+imagesc(head_frozen);
 hold on;
 plot(y(:,1),y(:,2),'mx','MarkerSize',10);
 hold on;
