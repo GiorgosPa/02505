@@ -87,7 +87,7 @@ FRE_ct_mri=sum(reshape((yhat-y).^2,1,numel(y)))
 
 %% Transform MR to CT using bilinear interpolation
 
-% Plot MRI control points on frozen CT
+% Plot CT frozen control points on MRI
 figure;
 imagesc(head_frozen);
 hold on;
@@ -95,12 +95,12 @@ plot(y(:,1),y(:,2),'mx','MarkerSize',10);
 hold on;
 plot(yhat(:,1),yhat(:,2),'g+','MarkerSize',10);
 
-V=head_mri;
-[X_mri,Y_mri]=meshgrid(0:(size(head_mri,1)-1),0:(size(head_mri,2)-1));
+V=head_frozen;
+[X_mri,Y_mri]=meshgrid(0:(size(head_mri,2)-1),0:(size(head_mri,1)-1));
 coords=s_mri_ct*R_mri_ct*[X_mri(:) Y_mri(:)]'+repmat(t_mri_ct,1,numel(X_mri));
 X=reshape(coords(1,:),size(X_mri)); Y=reshape(coords(2,:),size(Y_mri));
 [Xq,Yq]=meshgrid(0:(size(head_frozen,2)-1),0:(size(head_frozen,1)-1));
-Vq=griddata(X,Y,V,Xq,Yq,'linear'); % interp2 doesn't work with non-uniform grid like X and Y here
+Vq=interp2(X,Y,V,Xq,Yq,'linear'); % interp2 doesn't work with non-uniform grid like X and Y here
 fusionRGB=cat(3,head_frozen/256,Vq/256,zeros(size(Vq)));
 figure; imshow(fusionRGB);
 
