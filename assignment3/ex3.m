@@ -25,7 +25,7 @@ S_mri_ct=S; R_mri_ct=R; T_mri_ct=T;
 % Transform MR to CT using bilinear interpolation
 V=head_mri;
 [X_mri,Y_mri]=meshgrid(0:(size(head_mri,2)-1),0:(size(head_mri,2)-1));
-coords=s_mri_ct*R_mri_ct*[X_mri(:) Y_mri(:)]'+repmat(T_mri_ct,1,numel(X_mri));
+coords=S_mri_ct*R_mri_ct*[X_mri(:) Y_mri(:)]'+repmat(T_mri_ct,1,numel(X_mri));
 X=reshape(coords(1,:),size(X_mri)); Y=reshape(coords(2,:),size(Y_mri));
 [Xq,Yq]=meshgrid(0:(size(head_frozen,2)-1),0:(size(head_frozen,1)-1));
 Vq=griddata(X,Y,V,Xq,Yq,'linear'); % interp2 doesn't work with non-uniform grid like X and Y here
@@ -34,7 +34,6 @@ figure; imshow(fusionRGB);
 
 %% Find optimal parameters using Powell's method
 
-close all;
 V=head_mri;
 [X_mri,Y_mri]=meshgrid(0:(size(head_mri,2)-1),0:(size(head_mri,2)-1));
 [Xq,Yq]=meshgrid(0:(size(head_frozen,2)-1),0:(size(head_frozen,1)-1));
