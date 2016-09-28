@@ -12,3 +12,7 @@ imagesc(img); hold on;
 plot(u(1),u(2),'xr');
 plot([u(1) u(1)+D(1)*V(1,1)],[u(2) u(2)+D(1)*V(2,1)],'g');
 plot([u(1) u(1)+D(2)*V(1,2)],[u(2) u(2)+D(2)*V(2,2)],'r');
+ml=max(size(img))-1;
+xlim([0 ml]);
+ylim([0 ml]);
+axis square;
