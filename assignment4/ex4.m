@@ -45,9 +45,11 @@ plotgrid(y1,y2);
 %% Perform non-linear intensity-based registration with Gauss-Newton optimization
 
 % Select 2 mid-axial images
-load mri.mat
-img1=double(squeeze(D(:,:,1,15)));
-img2=double(squeeze(D(:,:,1,17)));
+load mr.mat
+% img1=double(squeeze(D(:,:,1,15)));
+% img2=double(squeeze(D(:,:,1,17)));
+img1 = mr1;
+img2 = mr2;
 m=size(img1);
 
 % Specify voxels coordinates
@@ -70,10 +72,11 @@ G=eye(size(Q,2));
 % 1. choose initial value w
 w=rand(size(Q,2),1);
 
-alpha=0.1;
+alpha=.1;
 % 2. while not STOP
 thr=1e-4;
 maxiter=100;
+Ty_new=[];
 I=nan(1,maxiter);
 iter=1;
 
@@ -84,38 +87,61 @@ subplot(2,3,4); imagesc(img2); axis off;
 
 while true
 
-    % 3. calculate transformation y=x+Qw
-    y=[x1(:); x2(:)] + Q*w;
-
-    % 4. calculate transformed image T(y) and its spatial derivatives ∇T(y)
+    if isempty(Ty_new)
+        % 3. calculate transformation y=x+Qw
+        y=[x1(:); x2(:)] + Q*w;
+        
+        % 4. calculate transformed image T(y) and its spatial derivatives dT(y)
+        y1 = reshape(y(1:end/2),m);
+        y2 = reshape(y(end/2+1:end),m);
+        y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
+        y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
+        
+        ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
+        Ty=img2(ind); Ty=reshape(Ty,m);
+    else
+        Ty=Ty_new;
+    end
+    [dxTy,dyTy]=gradient(Ty);
+    dTy=[dxTy(:); dyTy(:)];
+    
+    % 5. solve for update dw using Eq. (2.34)
+    A=repmat(dTy,1,size(Q,2)).*Q;    
+    dw=pinv(A'*A+alpha*(G'*G))*(A'*repmat(img1(:)-Ty(:),2,1)-alpha*(G'*G)*w);
+    
+    y=[x1(:); x2(:)] + Q*(w+dw);
     y1 = reshape(y(1:end/2),m);
     y2 = reshape(y(end/2+1:end),m);
     y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
     y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
-
     ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
-    Ty=img2(ind); Ty=reshape(Ty,m);
-    img_diff=img1-Ty;
-    [dxTy,dyTy]=gradient(Ty);
-    dTy=[dxTy(:); dyTy(:)];
+    Ty_new=img2(ind); Ty_new=reshape(Ty_new,m);
     
-    % 5. solve for update ∆w using Eq. (2.34)
-    A=repmat(dTy,1,size(Q,2)).*Q;    
-    dw=pinv(A'*A+alpha*(G'*G))*(A'*repmat(img_diff(:),2,1)-alpha*(G'*G)*w);
-    
-    % 6. update w := w + ∆w
-    
+    % 6. update w := w + dw  
+    I(iter)=0.5*(norm(img1(:)-Ty_new(:))^2+alpha*norm(G*w)^2);
+        
     % If objective function increases, do half-step
-    sum_img_diff=sum(img_diff(:));
-    if iter>1 && I(iter-1)<0.5*(sum_img_diff+alpha*norm(G*(w+dw))^2); 
+    if iter>1 && I(iter-1)<I(iter); 
         w=w+dw/2;
+        y=[x1(:); x2(:)] + Q*w;
+        y1 = reshape(y(1:end/2),m);
+        y2 = reshape(y(end/2+1:end),m);
+        y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
+        y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
+        ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
+        Ty_new=img2(ind); Ty_new=reshape(Ty_new,m);
+        I(iter)=0.5*(norm(img1(:)-Ty_new(:))^2+alpha*norm(G*w)^2);
     else
         w=w+dw;
     end
-    I(iter)=0.5*(sum_img_diff+alpha*norm(G*w)^2);
-    
-    % 7. end while
     I(iter)
+    
+%     step = .1;
+%     if(iter > 30)
+%         dw = dw / norm(dw);
+%     end
+
+    % 7. end while
     
     if mod(iter,nupdate)==1
         figure(h);
