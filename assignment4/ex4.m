@@ -24,7 +24,7 @@ w = [40*ones(9,1); zeros(9,1)];
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-plotgrid(y1,y2);
+figure; plotgrid(y1,y2);
 
 % Set all elements of w1 to a values and elements of w2 to 0
 w = [zeros(9,1); 20*ones(9,1)];
@@ -32,7 +32,7 @@ w = [zeros(9,1); 20*ones(9,1)];
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-plotgrid(y1,y2);
+figure; plotgrid(y1,y2);
 
 % Set all elements of w1 and w2 to 0 except for the 9th basis
 w = [zeros(8,1); 4; ones(8,1); 15];
@@ -40,26 +40,19 @@ w = [zeros(8,1); 4; ones(8,1); 15];
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-plotgrid(y1,y2);
+figure; plotgrid(y1,y2);
 
 %% Perform non-linear intensity-based registration with Gauss-Newton optimization
 
-% Select 2 mid-axial images
 load mr.mat
-% img1=double(squeeze(D(:,:,1,15)));
-% img2=double(squeeze(D(:,:,1,17)));
-img1 = mr1;
-img2 = mr2;
-m=size(img1);
+m=size(mr1);
 
 % Specify voxels coordinates
 [x1,x2]=meshgrid(1:m(2),1:m(1));
-min_x1=min(x1(:)); max_x1=max(x1(:));
-min_x2=min(x2(:)); max_x2=max(x2(:));
 
-% Set basis functions
-m = size(img1);
-p1 = 7; p2 = 7;
+% Create basis functions
+m = size(mr1);
+p1 = 5; p2 = 5; % Set the number of basis functions
 k1 = linspace(1,m(1),p1); k1 = augknt(k1,2);
 k2 = linspace(1,m(2),p2); k2 = augknt(k2,2);
 B1 = spmak(k1,eye(p1)); Q1 = fnval(B1,1:m(1))';
@@ -69,90 +62,77 @@ Q = kron(speye(2),kron(Q2,Q1));
 % Set regularizer matrix
 G=eye(size(Q,2));
 
-% 1. choose initial value w
-w=rand(size(Q,2),1);
+w=zeros(size(Q,2),1);
+alpha=1;
 
-alpha=.1;
-% 2. while not STOP
-thr=1e-4;
-maxiter=100;
-Ty_new=[];
+thr=0.001;
+maxiter=1000;
+newTy=[];
 I=nan(1,maxiter);
 iter=1;
 
-nupdate=5;
-h=figure;
-subplot(2,3,1); imagesc(img1); axis off;
-subplot(2,3,4); imagesc(img2); axis off;
+doPlot=true; % Turn on or off diagnostic plotting
+
+if doPlot
+    nupdate=250; %#ok<*UNRCH>
+    h=figure;
+    subplot(2,3,1); imagesc(mr1); axis image; axis off;
+end
 
 while true
-
-    if isempty(Ty_new)
-        % 3. calculate transformation y=x+Qw
-        y=[x1(:); x2(:)] + Q*w;
-        
-        % 4. calculate transformed image T(y) and its spatial derivatives dT(y)
-        y1 = reshape(y(1:end/2),m);
-        y2 = reshape(y(end/2+1:end),m);
-        y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
-        y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
-        
-        ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
-        Ty=img2(ind); Ty=reshape(Ty,m);
+    
+    % If Ty was computed from previous iteration, reuse it
+    if isempty(newTy) 
+        Ty=computeTy(mr2,x1,x2,Q,w);
     else
-        Ty=Ty_new;
+        Ty=newTy;
     end
     [dxTy,dyTy]=gradient(Ty);
     dTy=[dxTy(:); dyTy(:)];
     
-    % 5. solve for update dw using Eq. (2.34)
+    % Solve for update dw using Eq. (2.34)
     A=repmat(dTy,1,size(Q,2)).*Q;    
-    dw=pinv(A'*A+alpha*(G'*G))*(A'*repmat(img1(:)-Ty(:),2,1)-alpha*(G'*G)*w);
+    dw=pinv(A'*A+alpha*(G'*G))*(A'*repmat(mr1(:)-Ty(:),2,1)-alpha*(G'*G)*w);
     
-    y=[x1(:); x2(:)] + Q*(w+dw);
-    y1 = reshape(y(1:end/2),m);
-    y2 = reshape(y(end/2+1:end),m);
-    y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
-    y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
-    ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
-    Ty_new=img2(ind); Ty_new=reshape(Ty_new,m);
+    % Update w := w + dw
     
-    % 6. update w := w + dw  
-    I(iter)=0.5*(norm(img1(:)-Ty_new(:))^2+alpha*norm(G*w)^2);
+    % Compute new value of the objective function
+    [newTy,y1,y2]=computeTy(mr2,x1,x2,Q,w+dw);
+    I(iter)=0.5*(norm(mr1(:)-newTy(:))^2+alpha*norm(G*(w+dw))^2);
         
     % If objective function increases, do half-step
     if iter>1 && I(iter-1)<I(iter); 
         w=w+dw/2;
-        y=[x1(:); x2(:)] + Q*w;
-        y1 = reshape(y(1:end/2),m);
-        y2 = reshape(y(end/2+1:end),m);
-        y1(y1<min_x1)=min_x1(1); y1(y1>max_x1)=max_x1(1);
-        y2(y2<min_x2)=min_x2(1); y2(y2>max_x2)=max_x2(1);
-        ind = sub2ind(m,round(y2(:)),round(y1(:))); % Assume img1 and img2 are the same size
-        Ty_new=img2(ind); Ty_new=reshape(Ty_new,m);
-        I(iter)=0.5*(norm(img1(:)-Ty_new(:))^2+alpha*norm(G*w)^2);
+        [newTy,y1,y2]=computeTy(mr2,x1,x2,Q,w);
+        I(iter)=0.5*(norm(mr1(:)-newTy(:))^2+alpha*norm(G*w)^2); % Update the objective function
     else
         w=w+dw;
     end
-    I(iter)
-    
-%     step = .1;
-%     if(iter > 30)
-%         dw = dw / norm(dw);
-%     end
-
-    % 7. end while
-    
-    if mod(iter,nupdate)==1
-        figure(h);
-        subplot(2,3,2); imagesc(Ty); axis off;
-        subplot(2,3,5); imagesc(img_diff); axis off;
-        ha=subplot(1,3,3); cla; plotgrid(y1,y2,'prune',7);
-        pause(0.1);
+    if iter>1
+        disp(['Iter ' num2str(iter) ', I=' num2str(I(iter)) ', Idiff=' num2str(abs(I(iter-1)-I(iter)))]);
     end
-    if iter>1 && abs(I(iter-1)-I(iter))<thr && iter<maxiter
-            break;
+
+    % Plot things for diagnostic purposes
+    if doPlot && mod(iter,nupdate)==1
+        figure(h);
+        subplot(2,3,2); imagesc(Ty); axis image; axis off;
+        subplot(2,3,4); imgray(mr2-newTy); axis image; axis off;
+        subplot(2,3,5); imgray(mr1-newTy); axis image; axis off;
+        ha=subplot(2,3,3); cla; plotgrid(y1,y2,'prune',7);
+        subplot(2,3,6); plot(I); axis tight;
+        drawnow;
+    end
+    
+    % End-loop conditions
+    if iter>1 && (abs(I(iter-1)-I(iter))<thr || iter==maxiter)
+        break;
     end
     iter=iter+1;
 end
-if iter==maxiter, error('Did not converge'); end
+if iter==maxiter&&abs(I(iter-1)-I(iter))>thr
+    warning('Did not converge');
+end
+
+disp(['Initial squared norm ' num2str(norm(mr1(:)-mr2(:))^2)]);
+disp(['Final squared norm ' num2str(norm(mr1(:)-newTy(:))^2)]);
+

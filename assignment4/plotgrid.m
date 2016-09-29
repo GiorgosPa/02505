@@ -1,5 +1,10 @@
 function plotgrid(X,Y,varargin)
 
+% Transpose X and Y and inverse Y so that the grid is displayed like
+% imagesc
+X=X'; Y=Y';
+Y=-Y; 
+
 % Simple parser for optional variables
 for narg=1:2:numel(varargin)
     eval([varargin{narg} '=varargin{' num2str(narg+1) '};']);
@@ -12,7 +17,6 @@ hold on;
 for nx=1:prune:size(X,1)
     line([X(nx,1:end-1); X(nx,2:end)],[Y(nx,1:end-1); Y(nx,2:end)],'Color','r')
 end
-
 
 % plot vertical lines
 for ny=1:prune:size(X,2)
