@@ -42,7 +42,6 @@ figure; imshow(fusionRGB);
 
 %% Find optimal parameters using Powell's method
 
-close all;
 V=head_mri;
 [X_mri,Y_mri]=meshgrid(0:(size(head_mri,2)-1),0:(size(head_mri,2)-1));
 [Xq,Yq]=meshgrid(0:(size(head_frozen,2)-1),0:(size(head_frozen,1)-1));
