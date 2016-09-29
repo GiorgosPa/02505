@@ -5,8 +5,16 @@ head_frozen=double(head_frozen);
 % Get center of mass, principal axis and lengths
 [uf,Vf,Df]=com_pc(head_frozen);
 y=[uf; uf+Df(1)*Vf(:,1)'; uf+Df(2)*Vf(:,2)'];
+hold on;
+for i=1:3
+    plot(y(i,1),y(i,2),'m+')
+end
 [um,Vm,Dm]=com_pc(head_mri);
 x=[um; um+Dm(1)*Vm(:,1)'; um+Dm(2)*Vm(:,2)'];
+hold on;
+for i=1:3
+    plot(x(i,1),x(i,2),'m+')
+end
 
 % Estimate parameters for alignment between MRI to frozen CT using
 % principal axis and center of mass
@@ -25,7 +33,7 @@ S_mri_ct=S; R_mri_ct=R; T_mri_ct=T;
 % Transform MR to CT using bilinear interpolation
 V=head_mri;
 [X_mri,Y_mri]=meshgrid(0:(size(head_mri,2)-1),0:(size(head_mri,2)-1));
-coords=s_mri_ct*R_mri_ct*[X_mri(:) Y_mri(:)]'+repmat(T_mri_ct,1,numel(X_mri));
+coords=S_mri_ct*R_mri_ct*[X_mri(:) Y_mri(:)]'+repmat(T_mri_ct,1,numel(X_mri));
 X=reshape(coords(1,:),size(X_mri)); Y=reshape(coords(2,:),size(Y_mri));
 [Xq,Yq]=meshgrid(0:(size(head_frozen,2)-1),0:(size(head_frozen,1)-1));
 Vq=griddata(X,Y,V,Xq,Yq,'linear'); % interp2 doesn't work with non-uniform grid like X and Y here
