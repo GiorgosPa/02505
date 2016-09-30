@@ -19,38 +19,41 @@ B2 = spmak(k2,eye(p2)); Q2 = fnval(B2,1:m(2))';
 Q = kron(speye(2),kron(Q2,Q1));
 
 % Set all elements of w1 to a values and elements of w2 to 0
-w = [40*ones(9,1); zeros(9,1)];
+w = [10*ones(9,1); zeros(9,1)];
 [x1,x2] = meshgrid(1:m(1),1:m(2));
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-figure; plotgrid(y1,y2);
+figure;
+subplot(1,4,1); plotgrid(x1,x2);
+subplot(1,4,2); plotgrid(y1,y2);
 
 % Set all elements of w1 to a values and elements of w2 to 0
-w = [zeros(9,1); 20*ones(9,1)];
+w = [zeros(9,1); 10*ones(9,1)];
 [x1,x2] = meshgrid(1:m(1),1:m(2));
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-figure; plotgrid(y1,y2);
+subplot(1,4,3); plotgrid(y1,y2);
 
 % Set all elements of w1 and w2 to 0 except for the 9th basis
-w = [zeros(8,1); 4; ones(8,1); 15];
+w = [zeros(8,1); 10; ones(8,1); 10];
 [x1,x2] = meshgrid(1:m(1),1:m(2));
 y = [x1(:); x2(:)] + Q*w;
 y1 = reshape(y(1:end/2),size(x1,1),size(x1,2));
 y2 = reshape(y(end/2+1:end),size(x1,1),size(x1,2));
-figure; plotgrid(y1,y2);
+subplot(1,4,4); plotgrid(y1,y2);
 
 %% Perform non-linear intensity-based registration with Gauss-Newton optimization
 
 load mr.mat
 m=size(mr1);
+mr_diff=abs(mr1-mr2);
 
 % Specify voxels coordinates
 [x1,x2]=meshgrid(1:m(2),1:m(1));
 
-% Set basis functions
+% Create basis functions
 m = size(mr1);
 p1 = 5; p2 = 5; % Set the number of basis functions
 k1 = linspace(1,m(1),p1); k1 = augknt(k1,2);
@@ -63,7 +66,7 @@ Q = kron(speye(2),kron(Q2,Q1));
 G=eye(size(Q,2));
 
 w=zeros(size(Q,2),1);
-alpha=0.1;
+alpha=1;
 
 thr=0.001;
 maxiter=1000;
@@ -115,10 +118,12 @@ while true
     % Plot things for diagnostic purposes
     if doPlot && mod(iter,nupdate)==1
         figure(h);
-        subplot(2,3,2); imagesc(Ty); axis image; axis off;
-        subplot(2,3,4); imgray(mr2-newTy); axis image; axis off;
-        subplot(2,3,5); imgray(mr1-newTy); axis image; axis off;
-        ha=subplot(2,3,3); cla; plotgrid(y1,y2,'prune',7);
+        subplot(2,3,2); imagesc(Ty); axis image; axis off;             
+        img_diff=abs(mr1-newTy);
+        diff_scale=max([mr_diff(:); img_diff(:)]);
+        subplot(2,3,4); imshow(mr_diff/diff_scale); axis image; axis off;        
+        subplot(2,3,5); imgray(imdiff_); axis image; axis off;
+        ha=subplot(2,3,3); cla; plotgrid(y1,y2,'prune',7,'imagesc',1); axis off;
         subplot(2,3,6); plot(I); axis tight;
         drawnow;
     end
@@ -130,7 +135,7 @@ while true
     iter=iter+1;
 end
 if iter==maxiter&&abs(I(iter-1)-I(iter))>thr
-    error('Did not converge');
+    warning('Did not converge');
 end
 
 disp(['Initial squared norm ' num2str(norm(mr1(:)-mr2(:))^2)]);

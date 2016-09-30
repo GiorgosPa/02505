@@ -1,15 +1,18 @@
 function plotgrid(X,Y,varargin)
 
-% Transpose X and Y and inverse Y so that the grid is displayed like
-% imagesc
-X=X'; Y=Y';
-Y=-Y; 
-
 % Simple parser for optional variables
 for narg=1:2:numel(varargin)
     eval([varargin{narg} '=varargin{' num2str(narg+1) '};']);
 end
 if ~exist('prune','var'), prune=1; end
+if ~exist('imagesc','var'), imagesc=0; end
+
+% Transpose X and Y and inverse Y so that the grid is displayed like
+% imagesc
+if imagesc
+    X=X'; Y=Y';
+    Y=-Y;
+end
 
 hold on;
 
@@ -24,7 +27,6 @@ for ny=1:prune:size(X,2)
 end
 
 axis image;
-axis off;
 
 
 
