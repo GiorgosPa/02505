@@ -114,7 +114,7 @@ lung={'left','right'};
 total_d=0;
 Acontour=zeros(size(A));
 for nl=1:numel(lung)    
-%     Map lungs points to circle
+    % Map lungs points to circle
     d_lung_ind=eval(['d_' lung{nl} '_lung']);
     d_lung=ds0(d_lung_ind);
     d_diff=contour_pts_diff(d_lung);
@@ -163,7 +163,7 @@ src=[real(d) imag(d)];
 dest=[real(c(C(1:50))) imag(c(C(1:50)))];
 Cold=nan(50,1);
 h=figure;
-while ~isequal(Cold,C(1:50))
+while ~isequal(sort(Cold),sort(C(1:50)))
     
     % Warp second shape to first one using TPS warp 
     P=[ones(N,1) src]';    
@@ -172,33 +172,37 @@ while ~isequal(Cold,C(1:50))
     S=[K+lambda*eye(N) P'; P zeros(3,3)];
     coeff=S\Y;
     
-    old_dest=dest(:,1)+1i*dest(:,2);
-    dest=[K+lambda*eye(N) P']*coeff;
+    src=[K+lambda*eye(N) P']*coeff;
+    src_img=src(:,1)+1i*src(:,2);
 
 %     figure; hold on;
 %     plot(c,'bx');
-%     plot(dnew(:,1),dnew(:,2),'g+');
+%     plot(src(:,1),src(:,2),'g+');
 %     axis image;
     
     % Re-compute correspondences between the first shape and the warped
     % second shape using the Hungarian algorithm.
     dummycost=1;
     sc1=shapecontext(c,rfrac);
-    sc2=shapecontext(dest(:,1)+1i*dest(:,2),rfrac);
+    sc2=shapecontext(src_img,rfrac);
     A=computecostmatrix(sc1,sc2,0,dummycost);
     Amasked=A;
     Amasked(Alung==1|Acontour==1)=1;
     Cold=C(1:50);
     [C,T] = hungarian(Amasked);
+    dest=[real(c(C(1:50))) imag(c(C(1:50)))];
     
     figure(h);
-    subplot(1,2,1); imagesc(Amasked);
+    subplot(1,2,1); cla;
+    imagesc(Amasked);
     
-    subplot(1,2,2); hold on;
+    subplot(1,2,2); cla; hold on;
+    plot(d,'g+');
     plot(c,'bx');
-    plot(c(C(1:50)),'g+');
-    plot([c(C(1:50)) old_dest].','r');
+    plot(src_img,'ms');    
+    plot([d src_img].','r');
     axis image;
+    legend({'source','target','transformed'})
     
     % Repeat until convergence
 end
