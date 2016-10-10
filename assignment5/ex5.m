@@ -156,7 +156,7 @@ axis image;
 %% Optimize registration
 
 computeP=@(x) [ones(size(x,1),1) real(x) imag(x)];
-lambda=10;
+lambda=1000;
 N=numel(d);
 
 src=[real(d) imag(d)];
@@ -171,6 +171,8 @@ while ~isequal(sort(Cold),sort(C(1:50)))
     Y=[dest;zeros(3,2)];
     S=[K+lambda*eye(N) P'; P zeros(3,3)];
     coeff=S\Y;
+    Slam=[K P']*pinv(S);
+    df=trace(Slam(:,1:N));
     
     src=[K+lambda*eye(N) P']*coeff;
     src_img=src(:,1)+1i*src(:,2);
