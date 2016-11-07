@@ -28,9 +28,6 @@ rfrac=0.25;
 sc1=shapecontext(c,rfrac);
 sc2=shapecontext(d,rfrac);
 
-% Plot the context of points having similar context
-
-% TO BE ADDED
 
 % Compute cost matrix
 dummycost=1;
@@ -50,12 +47,41 @@ plot(d,'g+');
 plot([c(C(1:numel(d))) d].','r');
 axis image;
 
+% Plot the context of points having similar context
+
+z = reshape(sc2(1,:),3,8);
+x = reshape(sc1(C(1),:),3,8);
+
+figure;
+subplot(2,3,1);
+imagesc(z);
+subplot(2,3,4);
+imagesc(x);
+
+z = reshape(sc2(2,:),3,8);
+x = reshape(sc1(C(2),:),3,8);
+
+subplot(2,3,2);
+imagesc(z);
+subplot(2,3,5);
+imagesc(x);
+
+z = reshape(sc2(3,:),3,8);
+x = reshape(sc1(C(3),:),3,8);
+
+
+subplot(2,3,3);
+imagesc(z);
+
+subplot(2,3,6);
+imagesc(x);
+
 %% Now, we have some extra information we can use, namely that the lung dataset
 % consist of a left and a right part and the points are sampled equidistantly along
 % the outlines.
 % Implement these constraints by setting the cost in the cost matrix
 % such that points from the left lung cannot match to the right lung and vice
-% versa, and such that points from one lung dataset cannot shift more than ±20%
+% versa, and such that points from one lung dataset cannot shift more than ??20%
 % along the outline.
 
 % Define indices for left and right lungs
