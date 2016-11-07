@@ -61,19 +61,21 @@ plot(pixels(:,1), pixels(:,2), '.r', 'markersize', 12)
 % modify polar representation
 mpolar = .5*ones(size(lines));
 for i=1:size(lines,1)
-    mpolar(i,1:(130 - path(i))) = lines(i,path(i):end);
+    mpolar(i,1:(129 - path(i))) = lines(i,path(i)+1:end);
+    lcoords(i,1:(129 - path(i)),:) = lcoords(i,path(i)+1:end,:);
 end
 
 
 edges = diff(mpolar')';
 edges = abs(edges);
 edges = 1 - edges;
-edges = edges(:,2:end);
+%edges = edges(:,2:end);
 
 figure;
 imagesc(mpolar);
 
 path = findpath(edges);
+path=path+1;
 
 % plot polar
 figure;
@@ -89,6 +91,6 @@ end
 figure;
 imagesc(aoi);
 hold on
-plot(pixels(:,2), pixels(:,1), '.r', 'markersize', 12)
+plot(pixels(:,1), pixels(:,2), '.r', 'markersize', 12)
 
 

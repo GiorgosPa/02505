@@ -74,7 +74,8 @@ edges = 1 - edges;
 figure;
 imagesc(mpolar);
 
-path = findpath(edges);
+path = findpath(edges(:,3:end)); % Remove artifact from edges
+path=path+2;
 
 % plot polar
 figure;
