@@ -2,7 +2,7 @@ clear all;
 close all;
 load abdomen_biascorrected
 
-% select a rectangular area of interest
+%% select a rectangular area of interest
 x = find(max(abdomencorrected,[],2));
 y = find(max(abdomencorrected));
 aoi = abdomencorrected(x,y);
@@ -58,11 +58,11 @@ imagesc(aoi);
 hold on
 plot(pixels(:,1), pixels(:,2), '.r', 'markersize', 12)
 
-% modify polar representation
+%% modify polar representation
 mpolar = .5*ones(size(lines));
 for i=1:size(lines,1)
-    mpolar(i,1:(129 - path(i))) = lines(i,path(i)+1:end);
-    lcoords(i,1:(129 - path(i)),:) = lcoords(i,path(i)+1:end,:);
+    mpolar(i,1:(128 - path(i))) = lines(i,path(i)+2:end);
+    lcoords(i,1:(128 - path(i)),:) = lcoords(i,path(i)+2:end,:);
 end
 
 
@@ -78,7 +78,7 @@ path = findpath(edges);
 
 % plot polar
 figure;
-imagesc(edges)
+imagesc(mpolar)
 hold on
 plot(path, 1:360, '.r','markersize', 12)
 
