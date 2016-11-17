@@ -5,22 +5,11 @@ function path = findpath(image)
     bim = zeros(size(image));
     for i=2:size(image,1)
         for j=1:size(image,2)
-            if j == 1
-                cols = [j, j+1];
-                [val, ind] = min(image(i-1,cols));
-                aim(i,j) = image(i,j) + val;
-                bim(i,j) = cols(ind);
-            elseif j == size(image,2)
-                cols = [j-1,j];
-                [val, ind] = min(image(i-1,cols));
-                aim(i,j) = image(i,j) + val;
-                bim(i,j) = cols(ind);
-            else
-                cols = [j-1,j,j+1];
-                [val, ind] = min(image(i-1,cols));
-                aim(i,j) = image(i,j) + val;
-                bim(i,j) = cols(ind);
-            end
+            cols=[j-1 j j+1];
+            cols=cols(cols>0&cols<=size(image,2));
+            [val,ind]=min(aim(i-1,cols));
+            aim(i,j)=image(i,j)+val;
+            bim(i,j)=cols(ind);
         end
     end
 
