@@ -31,8 +31,8 @@ bar(edges,N/trapz(edges,N));
 x=min(data(:)):0.1:max(data(:));
 prior=[0.2 0.8];
 y=nan(numel(x),2);
-for n=1:K
-    y(:,n)=normpdf(x,m(n),s(n))*prior(n);
+for k=1:K
+    y(:,k)=normpdf(x,m(k),s(k))*prior(k);
 end
 l=plot(x,y,'LineWidth',2);
 l(3)=plot(x,sum(y,2),'k','LineWidth',2);
@@ -45,9 +45,9 @@ legend(l,{'Tumor PDF','Image PDF','Total PDF'});
 % 1-2
 prior=[0.2 0.8];
 post=nan(numel(data),K);
-for n=1:K
-    norm_const=arrayfun(@(x,y) normpdf(data(:),m(y),s(y))*prior(x),n*ones(1,K),1:K,'UniformOutput',0);
-    post(:,n)=(normpdf(data(:),m(n),s(n))*prior(n))./sum(cat(2,norm_const{:}),2);
+for k=1:K
+    norm_const=arrayfun(@(x,y) normpdf(data(:),m(y),s(y))*prior(x),k*ones(1,K),1:K,'UniformOutput',0);
+    post(:,k)=(normpdf(data(:),m(k),s(k))*prior(k))./sum(cat(2,norm_const{:}),2);
 end
 
 % Make final label assignment according to MAP
@@ -55,9 +55,9 @@ end
 labels=reshape(labels,size(data));
 
 figure;
-for n=1:K
-    subplot(1,3,n);
-    imagesc(reshape(post(:,n),size(data))); axis image; axis off;
+for k=1:K
+    subplot(1,3,k);
+    imagesc(reshape(post(:,k),size(data))); axis image; axis off;
 end
 subplot(1,3,3);
 tmp = repmat(data,[ 1 1 3 ]);
@@ -91,23 +91,23 @@ neighborMap=reshape(neighborMap,[size(data),3]);
 figure; imshow(neighborMap);
 
 % for beta=[0 0.3 0.6 2.5];
-for beta=[5];
+for beta=[0.6];
         
     % Use GMM posterior as initialization for mean-field approximation q. This
     % assumes that the responsabilities are initially equal to the label prior
     q=post;
 
     % Compute responsabilities and update q until convergence (label assignment for is voxel is unchanged)
-    lpost=labels(:); lpre=zeros(numel(data),1); diffNeigh=zeros(numel(data),K); resp=zeros(numel(data),1);
+    lpost=labels(:); lpre=zeros(numel(data),1); diffNeigh=nan(numel(data),K); resp=nan(numel(data),1);
     niter=1;
     while sum(lpre~=lpost)>500 || niter<100
         % Compute neighbor differences
         if niter==1
-            for n=1:K
-                nonPadded=1-q(:,n);
+            for k=1:K
+                nonPadded=1-q(:,k);
                 padded=zeros(size(nonPadded)+2);
                 padded(2:end-1,2:end-1)=nonPadded;
-                diffNeigh(:,n)=padded([2:end-1]-1,[2:end-1]) + ...
+                diffNeigh(:,k)=padded([2:end-1]-1,[2:end-1]) + ...
                     padded([2:end-1]+1,[2:end-1])+ ...
                     padded([2:end-1],[2:end-1]-1)+ ...
                     padded([2:end-1],[2:end-1]+1)+ ...
@@ -159,9 +159,9 @@ for beta=[5];
     
     % Plot posteriors and overlay
     figure;
-    for n=1:K
-        subplot(1,3,n);
-        imagesc(reshape(q(:,n),size(data))); axis image; axis off;
+    for k=1:K
+        subplot(1,3,k);
+        imagesc(reshape(q(:,k),size(data))); axis image; axis off;
     end
     subplot(1,3,3);
     tmp = repmat(data,[ 1 1 3 ]);
