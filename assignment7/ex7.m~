@@ -91,7 +91,7 @@ neighborMap=reshape(neighborMap,[size(data),3]);
 figure; imshow(neighborMap);
 
 % for beta=[0 0.3 0.6 2.5];
-for beta=[2.5];
+for beta=[0.6];
         
     % Use GMM posterior as initialization for mean-field approximation q. This
     % assumes that the responsabilities are initially equal to the label prior
@@ -100,14 +100,12 @@ for beta=[2.5];
     % Compute responsabilities and update q until convergence (label assignment for is voxel is unchanged)
     lpost=labels(:); lpre=zeros(numel(data),1); diffNeigh=nan(numel(data),K); resp=nan(numel(data),1);
     niter=1;
-    
-    % Update neighborhood differences
-    for k=1:K  
-        qofk = reshape(q(:,k),size(data));
-        nonPadded=1-qofk;
+    % Compute neighbor differences
+    for k=1:K
+        nonPadded=1-q(:,k);
         padded=zeros(size(nonPadded)+2);
         padded(2:end-1,2:end-1)=nonPadded;
-        temp=padded([2:end-1]-1,[2:end-1]) + ...
+        diffNeigh(:,k)=padded([2:end-1]-1,[2:end-1]) + ...
             padded([2:end-1]+1,[2:end-1])+ ...
             padded([2:end-1],[2:end-1]-1)+ ...
             padded([2:end-1],[2:end-1]+1)+ ...
@@ -115,12 +113,11 @@ for beta=[2.5];
             padded([2:end-1]-1,[2:end-1]+1)+ ...
             padded([2:end-1]+1,[2:end-1]-1)+ ...
             padded([2:end-1]+1,[2:end-1]+1); %#ok<NBRAK>
-        diffNeigh(:,k) = temp(:);
     end
-    
     while niter<100
         % Update responsabilities and posterior of non neighboring voxels
         for n=1:numel(indicesToUpdateCell)
+            
             ind=indicesToUpdateCell{n};
             
             % Update responsibilities
@@ -132,24 +129,12 @@ for beta=[2.5];
             like_prior=arrayfun(@(x) resp(:,x).*normpdf(data(ind),m(x),s(x)),1:K,'UniformOutput',0);
             norm_const=sum(cat(2,like_prior{:}),2);
             q(ind,:)=cat(2,like_prior{:})./repmat(norm_const,1,K);
-            
-            % Update neighborhood differences
-            for k=1:K
-                qofk = reshape(q(:,k),size(data));
-                nonPadded=1-qofk;
-                padded=zeros(size(nonPadded)+2);
-                padded(2:end-1,2:end-1)=nonPadded;
-                temp=padded([2:end-1]-1,[2:end-1]) + ...
-                    padded([2:end-1]+1,[2:end-1])+ ...
-                    padded([2:end-1],[2:end-1]-1)+ ...
-                    padded([2:end-1],[2:end-1]+1)+ ...
-                    padded([2:end-1]-1,[2:end-1]-1)+ ...
-                    padded([2:end-1]-1,[2:end-1]+1)+ ...
-                    padded([2:end-1]+1,[2:end-1]-1)+ ...
-                    padded([2:end-1]+1,[2:end-1]+1); %#ok<NBRAK>
-                diffNeigh(:,k) = temp(:);
-            end
-        end
+           
+         % Update neighborhood differences with new posterior
+         
+      end
+       
+        
         
         % Update label to MAP
         lpre=lpost;
